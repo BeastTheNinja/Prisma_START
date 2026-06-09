@@ -1,0 +1,135 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id           Int      @id @default(autoincrement()) // -> Primary Key med auto optælling
+  firstname    String   @default("Ikke navngivet")
+  lastname     String   @default("Ikke navngivet")
+  email        String   @unique // -> Unik værdi
+  password     String
+  description  String? // -> Lang tekst
+  imageUrl     String
+  refreshToken String
+  isActive     Boolean  @default(true) // -> Bool med default true
+  createdAt    DateTime @default(now()) // -> Datotid
+
+  carts   Cart[]
+  reviews Review[]
+  orders  Order[]
+
+  @@map("users") // -> Navn på tabel
+}
+
+model Category {
+  id          Int    @id @default(autoincrement())
+  title       String
+  slug        String
+  description String?
+
+  products Product[]
+
+  @@map("categories")
+}
+
+model Brand {
+  id       Int    @id @default(autoincrement())
+  title    String
+  imageUrl String
+
+  products Product[]
+
+  @@map("brands")
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  slug        String
+  imageUrl    String
+  teaser      String?  
+  description String?  // -> Lang tekst
+  price       Float // -> Decimaltal til pris
+  stock       Int
+  categoryId  Int
+  brandId     Int
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now()) // -> Datotid
+
+  category   Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  brand      Brand       @relation(fields: [brandId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  carts      Cart[]
+  reviews    Review[]
+  orderlines Orderline[]
+
+  @@map("products")
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  title     String   // -> Lang tekst
+  comment   String   // -> Lang tekst
+  numStars  Int
+  productId Int
+  userId    Int
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now()) // -> Datotid
+  updatedAt DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("reviews")
+}
+
+model Cart {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  productId Int
+  quantity  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([userId, productId]) // ← vigtig
+  @@map("carts")
+}
+
+
+model Order {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  totalPrice Int
+  status     Int
+  createdAt  DateTime @default(now()) // -> Datotid
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade) // -> Een til mange relation
+  orderlines Orderline[]
+
+  @@map("orders")
+}
+
+model Orderline {
+  id        Int      @id @default(autoincrement())
+  orderId   Int
+  productId Int
+  quantity  Int
+  price     Int
+  createdAt DateTime @default(now()) // -> Datotid
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: Cascade) // -> Een til mange relation
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade) // -> Een til mange relation
+
+  @@map("orderlines")
+}
